@@ -1,7 +1,5 @@
 pub(crate) mod platform;
 
-use std::intrinsics::likely;
-
 use platform::*;
 
 /// Hashes an arbitrary stream of bytes to an u32.
@@ -59,9 +57,12 @@ macro_rules! load_unaligned {
     ($ptr:ident, $($var:ident),+) => {
         $(
             #[allow(unused_mut)]
-            let mut $var = load_unaligned($ptr);
             #[allow(unused_assignments)]
-            $ptr = ($ptr).offset(1);
+            let mut $var = {
+                let mut v = load_unaligned($ptr);
+                $ptr = ($ptr).offset(1);
+                v
+            };
         )+
     };
 }
@@ -76,7 +77,7 @@ unsafe fn compress_all(input: &[u8]) -> State {
     let len = input.len();
     let mut ptr = input.as_ptr() as *const State;
 
-    if likely(len <= VECTOR_SIZE) {
+    if len <= VECTOR_SIZE {
         // Input fits on a single SIMD vector, however we might read beyond the input message
         // Thus we need this safe method that checks if it can safely read beyond or must copy
         return get_partial(ptr, len);
@@ -94,8 +95,8 @@ unsafe fn compress_all(input: &[u8]) -> State {
         // it means we'll need to read a partial vector. We can start with the partial vector first,
         // so that we can safely read beyond since we expect the following bytes to still be part of
         // the input
-        hash_vector = get_partial_unsafe(ptr, remaining_bytes as usize);
-        ptr = ptr.byte_add(remaining_bytes);
+        hash_vector = get_partial_unsafe(ptr, remaining_bytes);
+        ptr = ptr.cast::<u8>().add(remaining_bytes).cast();
     }
 
     if len <= VECTOR_SIZE * 2 {
@@ -146,7 +147,6 @@ unsafe fn compress_many(
     let remaining_bytes = remaining_bytes - unrollable_blocks_count * VECTOR_SIZE;
     let end_address = ptr.add(remaining_bytes / VECTOR_SIZE) as usize;
 
-    let mut hash_vector = hash_vector;
     while (ptr as usize) < end_address {
         load_unaligned!(ptr, v0);
         hash_vector = compress(hash_vector, v0);
@@ -192,7 +192,7 @@ mod tests {
         let mut ref_hash = 0;
 
         for i in 32..100 {
-            let new_hash = gxhash32(&mut bytes[..i], 0);
+            let new_hash = gxhash32(&bytes[..i], 0);
             assert_ne!(ref_hash, new_hash, "Same hash at size {i} ({new_hash})");
             ref_hash = new_hash;
         }
@@ -217,9 +217,7 @@ mod tests {
 
         let mut digits: Vec<usize> = vec![0; bits_to_set];
 
-        for i in 0..bits_to_set {
-            digits[i] = i;
-        }
+        (0..bits_to_set).for_each(|i| digits[i] = i);
 
         let mut i = 0;
         let mut set = ahash::AHashSet::new();

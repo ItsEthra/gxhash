@@ -23,9 +23,9 @@ pub unsafe fn load_unaligned(p: *const State) -> State {
 pub unsafe fn get_partial(p: *const State, len: usize) -> State {
     // Safety check
     if check_same_page(p) {
-        get_partial_unsafe(p, len as usize)
+        get_partial_unsafe(p, len)
     } else {
-        get_partial_safe(p, len as usize)
+        get_partial_safe(p, len)
     }
 }
 
@@ -66,13 +66,14 @@ pub unsafe fn compress(a: State, b: State) -> State {
     // 2+1 rounds of AES for compression
     let mut b = _mm256_aesenc_epi128(b, keys_1);
     b = _mm256_aesenc_epi128(b, keys_2);
-    return _mm256_aesenclast_epi128(a, b);
+
+    _mm256_aesenclast_epi128(a, b)
 }
 
 #[inline(always)]
 #[allow(overflowing_literals)]
 pub unsafe fn compress_fast(a: State, b: State) -> State {
-    return _mm256_aesenc_epi128(a, b);
+    _mm256_aesenc_epi128(a, b)
 }
 
 #[inline(always)]

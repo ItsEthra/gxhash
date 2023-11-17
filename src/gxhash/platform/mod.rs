@@ -1,3 +1,5 @@
+#![allow(clippy::module_inception)]
+
 #[cfg(target_arch = "aarch64")]
 #[path = "arm_128.rs"]
 pub mod platform;

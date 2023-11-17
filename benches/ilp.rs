@@ -14,7 +14,7 @@ fn baseline(input: &[u64]) -> u64 {
     while i < input.len() {
         h = hash(h, input[i]);
 
-        i = i + 1;
+        i += 1;
     }
     h
 }
@@ -29,7 +29,7 @@ fn unrolled(input: &[u64]) -> u64 {
         h = hash(h, input[i + 3]);
         h = hash(h, input[i + 4]);
 
-        i = i + 5;
+        i += 5;
     }
     h
 }
@@ -46,7 +46,7 @@ fn temp(input: &[u64]) -> u64 {
 
         h = hash(h, tmp);
 
-        i = i + 5;
+        i += 5;
     }
     h
 }
@@ -65,7 +65,7 @@ fn laned(input: &[u64]) -> u64 {
         h4 = hash(h4, input[i + 3]);
         h5 = hash(h5, input[i + 4]);
 
-        i = i + 5;
+        i += 5;
     }
     hash(hash(hash(hash(h1, h2), h3), h4), h5)
 }
@@ -75,9 +75,8 @@ use rand::Rng;
 fn ilp_benchmark(c: &mut Criterion) {
     let mut rng = rand::thread_rng();
     let mut input: [u64; 100000] = [0; 100000];
-    for i in 0..input.len() {
-        input[i] = rng.gen::<u64>();
-    }
+    (0..input.len()).for_each(|i| input[i] = rng.gen::<u64>());
+
     c.bench_function("baseline", |b| b.iter(|| black_box(baseline(&input))));
     c.bench_function("unrolled", |b| b.iter(|| black_box(unrolled(&input))));
     c.bench_function("temp", |b| b.iter(|| black_box(temp(&input))));
