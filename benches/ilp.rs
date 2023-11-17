@@ -56,7 +56,7 @@ fn laned(input: &[u64]) -> u64 {
     let mut h2: u64 = OFFSET;
     let mut h3: u64 = OFFSET;
     let mut h4: u64 = OFFSET;
-    let mut h5: u64 = OFFSET; 
+    let mut h5: u64 = OFFSET;
     let mut i: usize = 0;
     while i < input.len() {
         h1 = hash(h1, input[i]);

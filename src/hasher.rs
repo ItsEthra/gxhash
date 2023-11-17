@@ -1,7 +1,7 @@
-use std::hash::{Hasher, BuildHasherDefault};
-use std::collections::{HashMap, HashSet};
-use crate::gxhash::*;
 use crate::gxhash::platform::*;
+use crate::gxhash::*;
+use std::collections::{HashMap, HashSet};
+use std::hash::{BuildHasherDefault, Hasher};
 
 /// A `Hasher` for hashing an arbitrary stream of bytes.
 pub struct GxHasher(State);

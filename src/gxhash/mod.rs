@@ -73,7 +73,6 @@ pub(crate) unsafe fn gxhash(input: &[u8], seed: State) -> State {
 
 #[inline(always)]
 unsafe fn compress_all(input: &[u8]) -> State {
-
     let len = input.len();
     let mut ptr = input.as_ptr() as *const State;
 
@@ -82,7 +81,7 @@ unsafe fn compress_all(input: &[u8]) -> State {
         // Thus we need this safe method that checks if it can safely read beyond or must copy
         return get_partial(ptr, len);
     }
-    
+
     let remaining_bytes = len % VECTOR_SIZE;
 
     // The input does not fit on a single SIMD vector
@@ -95,7 +94,7 @@ unsafe fn compress_all(input: &[u8]) -> State {
         // it means we'll need to read a partial vector. We can start with the partial vector first,
         // so that we can safely read beyond since we expect the following bytes to still be part of
         // the input
-        hash_vector = get_partial_unsafe(ptr,remaining_bytes as usize);
+        hash_vector = get_partial_unsafe(ptr, remaining_bytes as usize);
         ptr = ptr.byte_add(remaining_bytes);
     }
 
@@ -118,15 +117,18 @@ unsafe fn compress_all(input: &[u8]) -> State {
 }
 
 #[inline(always)]
-unsafe fn compress_many(mut ptr: *const State, hash_vector: State, remaining_bytes: usize) -> State {
-
+unsafe fn compress_many(
+    mut ptr: *const State,
+    hash_vector: State,
+    remaining_bytes: usize,
+) -> State {
     const UNROLL_FACTOR: usize = 8;
 
-    let unrollable_blocks_count: usize = remaining_bytes / (VECTOR_SIZE * UNROLL_FACTOR) * UNROLL_FACTOR; 
+    let unrollable_blocks_count: usize =
+        remaining_bytes / (VECTOR_SIZE * UNROLL_FACTOR) * UNROLL_FACTOR;
     let end_address = ptr.add(unrollable_blocks_count) as usize;
     let mut hash_vector = hash_vector;
     while (ptr as usize) < end_address {
-
         load_unaligned!(ptr, v0, v1, v2, v3, v4, v5, v6, v7);
 
         let mut tmp: State;
@@ -165,14 +167,17 @@ mod tests {
         for s in 1..1200 {
             let mut bytes = vec![42u8; s];
             let ref_hash = gxhash32(&bytes, 0);
-    
+
             for i in 0..bytes.len() {
                 let swap = bytes[i];
                 bytes[i] = 82;
                 let new_hash = gxhash32(&bytes, 0);
                 bytes[i] = swap;
-    
-                assert_ne!(ref_hash, new_hash, "byte {i} not processed for input of size {s}");
+
+                assert_ne!(
+                    ref_hash, new_hash,
+                    "byte {i} not processed for input of size {s}"
+                );
             }
         }
     }
@@ -218,9 +223,8 @@ mod tests {
 
         let mut i = 0;
         let mut set = ahash::AHashSet::new();
-    
-        'stop: loop {
 
+        'stop: loop {
             // Set bits
             for d in digits.iter() {
                 let bit = 1 << (d % 8);
@@ -257,7 +261,13 @@ mod tests {
             }
         }
 
-        println!("{}-bit keys with {} bits set. Combinations: {}, Collisions: {}", size_bits, bits_to_set, i, i - set.len());
+        println!(
+            "{}-bit keys with {} bits set. Combinations: {}, Collisions: {}",
+            size_bits,
+            bits_to_set,
+            i,
+            i - set.len()
+        );
 
         assert_eq!(0, i - set.len(), "Collisions!");
     }

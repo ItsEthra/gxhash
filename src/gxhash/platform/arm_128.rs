@@ -1,5 +1,5 @@
-use std::intrinsics::likely;
 use core::arch::aarch64::*;
+use std::intrinsics::likely;
 
 use super::*;
 
@@ -102,11 +102,11 @@ pub unsafe fn finalize(hash: State, seed: State) -> State {
     let keys_3 = vld1q_u32([0xC78B122B, 0x5544B1B7, 0x689D2B7D, 0xD0012E32].as_ptr());
 
     // 3 rounds of AES
-    let mut hash = ReinterpretUnion{ int8: hash }.uint8;
-    hash = aes_encrypt(hash, ReinterpretUnion{ int8: seed }.uint8);
-    hash = aes_encrypt(hash, ReinterpretUnion{ uint32: keys_1 }.uint8);
-    hash = aes_encrypt(hash, ReinterpretUnion{ uint32: keys_2 }.uint8);
-    hash = aes_encrypt_last(hash, ReinterpretUnion{ uint32: keys_3 }.uint8);
+    let mut hash = ReinterpretUnion { int8: hash }.uint8;
+    hash = aes_encrypt(hash, ReinterpretUnion { int8: seed }.uint8);
+    hash = aes_encrypt(hash, ReinterpretUnion { uint32: keys_1 }.uint8);
+    hash = aes_encrypt(hash, ReinterpretUnion { uint32: keys_2 }.uint8);
+    hash = aes_encrypt_last(hash, ReinterpretUnion { uint32: keys_3 }.uint8);
 
-    ReinterpretUnion{ uint8: hash }.int8
+    ReinterpretUnion { uint8: hash }.int8
 }

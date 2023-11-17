@@ -59,7 +59,8 @@ impl ResultProcessor {
     pub fn on_end(&mut self) {
         if !self.header_written {
             println!("| {} |", self.header_data.join(" | "));
-            let separator: Vec<String> = self.header_data.iter().map(|_| "---".to_string()).collect();
+            let separator: Vec<String> =
+                self.header_data.iter().map(|_| "---".to_string()).collect();
             println!("|{}|", separator.join("|"));
             self.header_written = true;
         }
@@ -68,11 +69,11 @@ impl ResultProcessor {
     }
 }
 
-#[cfg(all(not(feature = "bench-csv"),not(feature = "bench-md")))]
+#[cfg(all(not(feature = "bench-csv"), not(feature = "bench-md")))]
 #[derive(Default)]
 pub struct ResultProcessor;
 
-#[cfg(all(not(feature = "bench-csv"),not(feature = "bench-md")))]
+#[cfg(all(not(feature = "bench-csv"), not(feature = "bench-md")))]
 impl ResultProcessor {
     pub fn on_start(&mut self, name: &str) {
         println!("{}", name);

@@ -1,27 +1,31 @@
-use std::time::Duration;
 use std::alloc::{alloc, dealloc, Layout};
-use std::slice;
 use std::hash::Hasher;
+use std::slice;
+use std::time::Duration;
 
 use criterion::measurement::WallTime;
-use criterion::{criterion_group, criterion_main, Criterion, Throughput, PlotConfiguration, AxisScale, BenchmarkGroup, BenchmarkId};
+use criterion::{
+    criterion_group, criterion_main, AxisScale, BenchmarkGroup, BenchmarkId, Criterion,
+    PlotConfiguration, Throughput,
+};
 use rand::Rng;
 
 use gxhash::*;
 
 fn benchmark<F>(c: &mut BenchmarkGroup<WallTime>, data: &[u8], name: &str, delegate: F)
-    where F: Fn(&[u8], i32) -> u64
+where
+    F: Fn(&[u8], i32) -> u64,
 {
     for i in 1.. {
         let len = usize::pow(4, i);
         if len > data.len() {
             break;
-        }  
+        }
 
         c.throughput(Throughput::Bytes(len as u64));
 
         let slice = &data[0..len]; // Aligned
-        // let slice = &data[1..len]; // Unaligned
+                                   // let slice = &data[1..len]; // Unaligned
         c.bench_with_input(BenchmarkId::new(name, len), slice, |bencher, input| {
             bencher.iter(|| delegate(input, 0))
         });
@@ -44,11 +48,15 @@ fn benchmark_all(c: &mut Criterion) {
     group.plot_config(plot_config);
 
     // GxHash
-    let algo_name = if cfg!(feature = "avx2") { "gxhash-avx2" } else { "gxhash" };
+    let algo_name = if cfg!(feature = "avx2") {
+        "gxhash-avx2"
+    } else {
+        "gxhash"
+    };
     benchmark(&mut group, slice, algo_name, |data: &[u8], _: i32| -> u64 {
         gxhash64(data, 0)
     });
-    
+
     // AHash
     let ahash_hasher = ahash::RandomState::with_seeds(0, 0, 0, 0);
     benchmark(&mut group, slice, "ahash", |data: &[u8], _: i32| -> u64 {
@@ -56,27 +64,43 @@ fn benchmark_all(c: &mut Criterion) {
     });
 
     // T1ha0
-    benchmark(&mut group, slice, "t1ha0", |data: &[u8], seed: i32| -> u64 {
-        t1ha::t1ha0(data, seed as u64)
-    });
+    benchmark(
+        &mut group,
+        slice,
+        "t1ha0",
+        |data: &[u8], seed: i32| -> u64 { t1ha::t1ha0(data, seed as u64) },
+    );
 
     // XxHash (twox-hash)
-    benchmark(&mut group, slice, "xxhash", |data: &[u8], seed: i32| -> u64 {
-        twox_hash::xxh3::hash64_with_seed(data, seed as u64)
-    });
+    benchmark(
+        &mut group,
+        slice,
+        "xxhash",
+        |data: &[u8], seed: i32| -> u64 { twox_hash::xxh3::hash64_with_seed(data, seed as u64) },
+    );
 
     // HighwayHash
-    benchmark(&mut group, slice, "highwayhash", |data: &[u8], _: i32| -> u64 {
-        use highway::{HighwayHasher, HighwayHash};
-        HighwayHasher::default().hash64(data)
-    });
+    benchmark(
+        &mut group,
+        slice,
+        "highwayhash",
+        |data: &[u8], _: i32| -> u64 {
+            use highway::{HighwayHash, HighwayHasher};
+            HighwayHasher::default().hash64(data)
+        },
+    );
 
     // FNV-1a
-    benchmark(&mut group, slice, "fnv-1a", |data: &[u8], seed: i32| -> u64 {
-        let mut fnv_hasher = fnv::FnvHasher::with_key(seed as u64);
-        fnv_hasher.write(data);
-        fnv_hasher.finish()
-    });
+    benchmark(
+        &mut group,
+        slice,
+        "fnv-1a",
+        |data: &[u8], seed: i32| -> u64 {
+            let mut fnv_hasher = fnv::FnvHasher::with_key(seed as u64);
+            fnv_hasher.write(data);
+            fnv_hasher.finish()
+        },
+    );
 
     group.finish();
 
